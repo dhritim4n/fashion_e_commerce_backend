@@ -1,0 +1,1 @@
+export const DB_Name = "fashion_e_commerce_db";
