@@ -1,5 +1,5 @@
-import error from "mongoose/lib/error/index.js"
 import { Product } from "../models/product.model.js"
+import errorResponse from "../utils/errorResponse.js"
 
 const getProducts = async (req, res) => {
 
@@ -13,20 +13,19 @@ const getProducts = async (req, res) => {
         })
 
     } catch (error) {
-        return res.status(401).json({
-            "message": error.message
-        })
+        errorResponse(error, res)
     }
 
 }
 
 const addProduct = async (req, res) => {
 
-    const { name, price, category, colors, sizes, countInStock, rating } = req.body
+    const { name, brand, price, category, colors, sizes, countInStock, rating } = req.body
     try {
 
         await Product.create({
             name,
+            brand,
             price,
             category,
             colors,
@@ -42,9 +41,7 @@ const addProduct = async (req, res) => {
         })
 
     } catch (error) {
-        return res.status(401).json({
-            "message": error.message
-        })
+        errorResponse(error, res)
     }
 
 }
@@ -71,7 +68,7 @@ const searchProduct = async (req, res) => {
 
     try {
         if (!q) {
-            throw new error("Invalid Search Query !")
+            throw new Error("Invalid Search Query !")
         }
 
         const products = await Product.find({
@@ -98,7 +95,7 @@ const findProduct = async (req, res) => {
     const query = req.query
 
     if(!query){
-        throw new error("Invalid Query !!")
+        throw new Error("Invalid Query !!")
     }
     try {
         

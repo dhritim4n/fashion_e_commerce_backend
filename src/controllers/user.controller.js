@@ -1,20 +1,22 @@
-import error from "mongoose/lib/error/index.js"
+
 import { User } from "../models/user.model.js"
-import ApiError from "../utils/ApiError.js"
 import { comparePassword, hashPassword } from "../utils/bcryptUtils.js"
 import jwt from 'jsonwebtoken'
-
+import errorResponse from "../utils/errorResponse.js"
+import { response } from "express"
 
 const handleSignUp = async (req, res) => {
 
-    var { name, email, password } = req.body
+    var { name, email, password, isAdmin } = req.body
     password = await hashPassword(password)
+
 
     try {
         await User.create({
             name,
             email,
-            password
+            password,
+            isAdmin
         })
 
         return res.status(201).json({
@@ -32,7 +34,7 @@ const handleSignUp = async (req, res) => {
 }
 const handleSignIn = async (req, res) => {
 
-    var { email, password } = req.body
+    var { email, password,  } = req.body
 
     try {
 
@@ -41,13 +43,13 @@ const handleSignIn = async (req, res) => {
         })
 
         if (!user) {
-            throw new error("Email Not Found")
+            throw new Error("Email Not Found")
         }
 
         const isPasswordValid = await comparePassword(password, user.password)
 
         if (!isPasswordValid) {
-            throw new error("Invalid Credentials")
+            throw new Error("Invalid Credentials")
         }
 
         const accessToken = jwt.sign(
@@ -60,6 +62,7 @@ const handleSignIn = async (req, res) => {
 
         )
 
+        res.cookie("accessToken", accessToken)
         return res.status(201).json({
             "success": true,
             "message": "SignIn Successfull !",
@@ -74,10 +77,39 @@ const handleSignIn = async (req, res) => {
 
 
 }
+const handleChangePass = async(req,res) => {
+    const { email, password, newPassword } = req.body
+    const user = await User.findOne({email})
+    try {
+
+        if(!user){
+            throw new Error("User not exist !!")
+        }
+
+        const isValid = comparePassword(password, user.password)
+
+        if(!isValid || !newPassword){
+            throw new Error("Invalid Cred !!")
+        }
+        
+        const hashedPassword = await hashPassword(newPassword)
+        user.password = hashedPassword
+        await user.save()
+
+        return res.status(201).json({
+            "success":true,
+            "message":"password changed!!"
+        })
+    } catch (error) {
+        errorResponse(error, res)
+    }
+}
+
 
 
 
 export {
     handleSignUp,
-    handleSignIn
+    handleSignIn,
+    handleChangePass
 }

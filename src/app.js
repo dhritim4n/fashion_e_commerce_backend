@@ -4,6 +4,7 @@ import cors from 'cors';
 import user_router from './routes/user.routes.js'
 import product_router from './routes/product.routes.js'
 import bodyParser from 'body-parser';
+import cart_router from './routes/cart.routes.js'
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(bodyParser.json())
 
 app.use("/auth",user_router)
 app.use("/product",product_router)
+app.use("/cart",cart_router)
 
 
 export default app;
