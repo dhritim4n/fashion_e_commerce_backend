@@ -24,32 +24,26 @@ const getCart = async (req, res) => {
 }
 
 const addToCart = async (req, res) => {
-    const userId = req.userId
-    var { productId, quantity, color, size } = req.body
+    const userId = req.userId;
+    let { productId, quantity, color, size } = req.body;
+
     try {
-        const product = await Product.findById(productId)
-        const user = await User.findById(userId)
-        var cart = await Cart.findOne({ userId })
+        const product = await Product.findById(productId);
+        const user = await User.findById(userId);
+        let cart = await Cart.findOne({ userId });
 
-        if (!user) {
-            throw new Error("Auth Error !!")
-        }
+        if (!user) throw new Error("Auth Error !!");
+        if (!product) throw new Error("Product Not Found!!");
 
-        if (!product) {
-            throw new Error("Product Not Found!!")
-        }
-        if (!color) {
-            color = product.colors[0]
-        }
-        if (!size) {
-            size = product.sizes[0]
-        }
+        const qty = Number(quantity) || 1;
+
+        if (!color) color = product.colors[0];
+        if (!size) size = product.sizes[0];
 
         if (!cart) {
-            cart = await createCart(userId)
+            cart = await createCart(userId);
         }
 
-        // find same product + color + size
         const itemIndex = cart.items.findIndex(
             (item) =>
                 item.productId.toString() === productId &&
@@ -58,58 +52,60 @@ const addToCart = async (req, res) => {
         );
 
         if (itemIndex > -1) {
-            // item exists → increase quantity
-            cart.items[itemIndex].quantity += Number(quantity) || 1;
+            // item exists
+            cart.items[itemIndex].quantity += qty;
+            cart.items[itemIndex].total += qty * product.price;
+            cart.total += qty * product.price;
         } else {
-            // item does not exist → add new
+            // new item
+            const itemTotal = qty * product.price;
+
             cart.items.push({
-                productId: productId,
-                quantity: quantity || 1,
+                productId,
+                quantity: qty,
                 color,
                 size,
+                total: itemTotal,
             });
-        }
-        await cart.save()
 
+            cart.total += itemTotal;
+        }
+
+        await cart.save();
 
         return res.status(201).json({
-            "success": true,
-            "message": "product added"
-        })
+            success: true,
+            message: "Product added to cart",
+        });
     } catch (error) {
-        errorResponse(error, res)
+        errorResponse(error, res);
     }
-}
+};
 
 const removeFromCart = async (req, res) => {
-    const userId = req.userId
-    var { productId, color, size } = req.body;
+    const userId = req.userId;
+    let { productId, color, size } = req.body;
 
     try {
         const user = await User.findById(userId);
         if (!user) {
-            throw new Error("Auth Error!!");
+            return res.status(401).json({ success: false, message: "Auth Error!!" });
         }
 
         const product = await Product.findById(productId);
         if (!product) {
-            throw new Error("Product Not Found!!");
+            return res.status(404).json({ success: false, message: "Product Not Found!!" });
         }
 
-        var cart = await Cart.findOne({ userId });
+        const cart = await Cart.findOne({ userId });
         if (!cart) {
-            throw new Error("Cart not found for user");
+            return res.status(404).json({ success: false, message: "Cart not found" });
         }
 
-        // Use default color/size if not provided (optional)
-        if (!color) {
-            color = product.colors[0];
-        }
-        if (!size) {
-            size = product.sizes[0];
-        }
+        // Default color/size if not provided
+        if (!color) color = product.colors[0];
+        if (!size) size = product.sizes[0];
 
-        // Find the index of the matching item
         const itemIndex = cart.items.findIndex(
             (item) =>
                 item.productId.toString() === productId &&
@@ -118,11 +114,18 @@ const removeFromCart = async (req, res) => {
         );
 
         if (itemIndex === -1) {
-            throw new Error("Item not found in cart");
+            return res.status(404).json({ success: false, message: "Item not found in cart" });
         }
 
-        // Remove item from the array
+        // 🔥 Subtract item total from cart total
+        const itemTotal = cart.items[itemIndex].quantity * product.price;
+        cart.total -= itemTotal;
+
+        // Remove item
         cart.items.splice(itemIndex, 1);
+
+        // Prevent negative totals
+        if (cart.total < 0) cart.total = 0;
 
         await cart.save();
 
@@ -134,6 +137,7 @@ const removeFromCart = async (req, res) => {
         errorResponse(error, res);
     }
 };
+
 
 
 

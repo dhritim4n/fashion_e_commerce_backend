@@ -5,6 +5,7 @@ import user_router from './routes/user.routes.js'
 import product_router from './routes/product.routes.js'
 import bodyParser from 'body-parser';
 import cart_router from './routes/cart.routes.js'
+import order_router from './routes/order.routes.js'
 
 const app = express();
 
@@ -17,9 +18,9 @@ app.use(express.static("public"))
 app.use(cookieParser())
 app.use(bodyParser.json())
 
-app.use("/auth",user_router)
-app.use("/product",product_router)
-app.use("/cart",cart_router)
-
+app.use("/api/auth",user_router)
+app.use("/api/product",product_router)
+app.use("/api/cart",cart_router)
+app.use("/api/order",order_router)
 
 export default app;

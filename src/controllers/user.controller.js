@@ -104,12 +104,23 @@ const handleChangePass = async(req,res) => {
         errorResponse(error, res)
     }
 }
-
+const handleLogOut = async (req, res) => {
+    try {
+        res.clearCookie("accessToken")
+        res.status(201).json({
+            "success": true,
+            "message": "logged out !"
+        })
+    } catch (error) {
+        errorResponse(error, res)
+    }
+}
 
 
 
 export {
     handleSignUp,
     handleSignIn,
-    handleChangePass
+    handleChangePass,
+    handleLogOut
 }
